@@ -89,9 +89,11 @@ void selectMode(bool& PvP, bool& PvE)
 }
 void PvPMode(Player person1 , Player person2, Board& desk)
 {
+	int move = 1;
 	while (true)
 	{
-		person2.setCell(desk,desk.whiteSymbol,4);
+		person2.setCell(desk,desk.whiteSymbol,4,move);
+		move++;
 		if (desk.winner == desk.blackSymbol)
 		{
 			cout << "BLACK PLAYER WIN";
@@ -103,7 +105,8 @@ void PvPMode(Player person1 , Player person2, Board& desk)
 			return;
 		}
 		else;
-		person1.setCell(desk,desk.blackSymbol,4);
+		person1.setCell(desk,desk.blackSymbol,4,move);
+		move++;
 		if (desk.winner == desk.blackSymbol)
 		{
 			cout << "BLACK PLAYER WIN";

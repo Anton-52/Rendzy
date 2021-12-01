@@ -11,13 +11,13 @@ struct treeNode
 class Player
 {
 public:
-    void setCell(Board& desk,char playerColor,int rank);
+    void setCell(Board& desk,char playerColor,int rank,int move);
     bool human = false, bot = false;
     bool blackSymbolPlayer = false, whiteSymbolPlayer = false;
 private:
     int evaluationFunction(int i, int j, Board desk,char playerColor);
-    treeNode* minMax( Board desk, char playerColor,int rank);
-    void sonsAdder(int i, int j, Board desk, int level,char PlayerColor, treeNode* parent,int rank);
+    treeNode* minMax( Board desk, char playerColor,int rank,int move);
+    void sonsAdder(int i, int j, Board desk, int level,char PlayerColor, treeNode* parent,int rank, int alpha, int beta);
     bool firstEval = true;
 };
 

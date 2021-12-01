@@ -2,7 +2,7 @@
 
 using namespace std;
 
-void Player::setCell(Board& desk,char playerColor,int rank)
+void Player::setCell(Board& desk,char playerColor,int rank,int move)
 {
 	HANDLE hcd = GetStdHandle(STD_OUTPUT_HANDLE);
 	if (human == true)
@@ -67,8 +67,8 @@ void Player::setCell(Board& desk,char playerColor,int rank)
 					desk.playing_field[setLine - 2][setColumn - 3].avaliable == true &&		
 					desk.playing_field[setLine - 2][setColumn - 3].blockedToNextMove == false)
 				{
-					if (desk.longLineDetect(setLine - 2, setColumn - 3, 5 ,desk.whiteSymbol) ||
-						desk.longLineDetect(setLine - 2, setColumn - 3, 6, desk.whiteSymbol) == true)
+					if ((desk.longLineDetect(setLine - 2, setColumn - 3, 5, desk.whiteSymbol) == true) || 
+						(desk.longLineDetect(setLine - 2, setColumn - 3, 6, desk.whiteSymbol) == true))
 					{
 						desk.winner = desk.whiteSymbol;
 						return;
@@ -108,7 +108,7 @@ void Player::setCell(Board& desk,char playerColor,int rank)
 			
 			int line = 0, column = 0;
 			treeNode* bestMove = new treeNode;
-			bestMove = minMax(desk, playerColor,rank);
+			bestMove = minMax(desk, playerColor,rank,move);
 			line = bestMove->line;
 			column = bestMove->column;
 			
@@ -251,8 +251,8 @@ int Player::evaluationFunction(int i, int j, Board desk, char playerColor)
 			else
 			{
 				// Меняя коэффициенты мы меняем значимость комбинаций, так можно задать манеру игры
-				Grade = whiteNonSpace3 * 1  + whiteNonSpace4 * 2   +
-					whiteNonSpaceFork3 * 1   + whiteNonSpaceFork4 * 1 +
+				Grade = whiteNonSpace3 * 1  + whiteNonSpace4 * 1   +
+					whiteNonSpaceFork3 * 1   + whiteNonSpaceFork4 * 1+
 					  whiteNonSpaceFork3x4 * 1 ;
 				return Grade;
 			}
@@ -282,7 +282,8 @@ int Player::evaluationFunction(int i, int j, Board desk, char playerColor)
 			else
 			{
 				// Меняя коэффициенты мы меняем значимость комбинаций, так можно задать манеру игры
-				Grade = whiteNonSpace3 * 1  + whiteNonSpace4 * 1  + whiteNonSpaceFork3 * 1 + whiteNonSpaceFork4 * 1 + whiteNonSpaceFork3x4 * 1 ;
+				Grade = whiteNonSpace3 * 1  + whiteNonSpace4 * 1  + whiteNonSpaceFork3 
+					* 1 + whiteNonSpaceFork4 * 1 + whiteNonSpaceFork3x4 * 1 ;
 				Grade = Grade + blackNonSpace3 * 10  + blackNonSpace4 * 20;
 				return Grade;
 			}
@@ -290,25 +291,52 @@ int Player::evaluationFunction(int i, int j, Board desk, char playerColor)
 	}
 	else return 0;
 }
-treeNode* Player::minMax(Board desk, char playerColor , int rank)
+treeNode* Player::minMax(Board desk, char playerColor , int rank,int move)
 {
 	treeNode* bestMoove = new treeNode;
 	vector<treeNode*> valideMoves;
 	// Обходим все поле
-	for (int i = 0; i < 15; i++)
+	// Выбираем выгодные для хода клетки
+	int line1 = 0, column1 = 0, line2=0, column2=0;
+	if (move == 1)
 	{
-		for (int j = 0; j < 15; j++)
+		line1 = 6;
+		line2 = 9;
+		column1 = 6;
+		column2 = 9;
+	}
+	else if (move == 2)
+	{
+		line1 = 5;
+		line2 = 10;
+		column1 = 5;
+		column2 = 10;
+	}
+	else
+	{
+		line1 = 0;
+		line2 = 15;
+		column1 = 0;
+		column2 = 15;
+	}
+
+	
+	for (int i = line1; i < line2; i++)
+	{
+		for (int j = column1; j < column2; j++)
 		{
-			if (desk.playing_field[i][j].avaliable == false || desk.playing_field[i][j].blockedToNextMove == true);
+			if (desk.playing_field[i][j].avaliable == false ||
+				desk.playing_field[i][j].blockedToNextMove == true);
 			else
 			{
 				int Grade = evaluationFunction(i, j, desk, playerColor);
-				if (Grade < 4)
+				if (Grade < 1)
 				{
 
 				}
 				else
 				{
+					int alpha = -10000, beta = +10000;
 					treeNode* root = new treeNode;
 					root->line = i;
 					root->column = j;
@@ -316,16 +344,18 @@ treeNode* Player::minMax(Board desk, char playerColor , int rank)
 					root->level = 0;
 					root->value = Grade;
 					valideMoves.push_back(root);
-					sonsAdder(i, j, desk, root->level, playerColor, root, rank);
+					sonsAdder(i, j, desk, root->level, playerColor, root, rank , alpha , beta );
 				}
 			}
 		}
 	}
+	// если все клетки имеют оценку 0,
+	// делается ход в первую свободную клетку поля
 	if (valideMoves.size() == 0)
 	{
-		for (int i = 0; i < 15; i++)
+		for (int i = line1; i < line2; i++)
 		{
-			for (int j = 0; j < 15; j++)
+			for (int j = column1; j < column2; j++)
 			{
 				if (desk.playing_field[i][j].avaliable == true &&
 					desk.playing_field[i][j].blockedToNextMove == false)
@@ -339,8 +369,8 @@ treeNode* Player::minMax(Board desk, char playerColor , int rank)
 		}
 	}
 	else;
-
-	bestMoove->value = -5;
+	// выбирается лучший из корней построенных деревьев
+	bestMoove->value = -1;
 	for (unsigned int i = 0; i < valideMoves.size(); i++)
 	{
 		if (valideMoves[i]->value > bestMoove->value)
@@ -355,7 +385,8 @@ treeNode* Player::minMax(Board desk, char playerColor , int rank)
 	}
 	return bestMoove;
 }
-void Player::sonsAdder(int i, int j, Board desk, int level, char playerColor, treeNode* root,int rank)
+void Player::sonsAdder(int i, int j, Board desk, int level,
+	char playerColor, treeNode* root, int rank , int alpha, int beta)
 {
 	level++;
 	if (level > rank) return;
@@ -371,16 +402,34 @@ void Player::sonsAdder(int i, int j, Board desk, int level, char playerColor, tr
 	}
 
 	firstEval = true;
-	// Обходим все поле
+	// Обходим все поле и выбираем лучшие клетки
 	for (int i = 0; i < 15; i++)
 	{
 		for (int j = 0; j < 15; j++)
 		{
-			if (desk.playing_field[i][j].avaliable == false || desk.playing_field[i][j].blockedToNextMove == true);
+			if (desk.playing_field[i][j].avaliable == false ||
+				desk.playing_field[i][j].blockedToNextMove == true);
 			else
 			{
+				//________________________________________________
+				// АЛЬФА - БЕТА ОТСЕЧЕНИЕ
+				// 
+				// Если клетка свободна и доступна 
+				// для хода 
+				// Проверяем значения альфа и бета
+				// Дальше либо строим дерево решений для
+				// Этой клетки, либо прекращаем.
+				if (root->level == 0)
+				{
+					if (alpha == beta);
+					else if (alpha > beta) return;
+					else;
+				}
+				else if (alpha >= beta) return;
+				else;
+				//________________________________________________
 				int Grade = evaluationFunction(i, j, desk, playerColor);
-				if (Grade == 0);
+				if (Grade < 1);
 				else
 				{
 					treeNode* son = new treeNode;
@@ -389,9 +438,9 @@ void Player::sonsAdder(int i, int j, Board desk, int level, char playerColor, tr
 					son->parent = root;
 					son->level = level;
 					son->value = Grade;
-					root->sons.push_back(son);
-					sonsAdder(i, j, desk, level, playerColor, son, rank);
 					firstEval = false;
+					root->sons.push_back(son);
+					sonsAdder(i, j, desk, level, playerColor, son, rank, alpha, beta);
 					if (firstEval == true)
 					{
 						son->parent->value = son->value;
@@ -400,13 +449,21 @@ void Player::sonsAdder(int i, int j, Board desk, int level, char playerColor, tr
 					{
 						if (level % 2 != 0)
 						{
-							if (son->value > son->parent->value) son->parent->value = son->value;
+							if (son->value > son->parent->value)
+								son->parent->value = son->value;
+							// Уточняем Бета
+							alpha = son->value;
+
 						}
 						else
 						{
-							if (son->value < son->parent->value) son->parent->value = son->value;
+							if (son->value < son->parent->value)
+								son->parent->value = son->value;
+							// Уточняем альфа
+							beta = son->value;
 						}
 					}
+
 				}
 			}
 		}
